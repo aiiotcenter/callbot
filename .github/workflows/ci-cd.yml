@@ -38,7 +38,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /home/test.aiiot.center
+            cd /home/aiiovdft/test.aiiot.center
             docker-compose pull
             docker-compose down
             docker-compose up -d
