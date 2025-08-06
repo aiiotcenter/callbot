@@ -80,9 +80,9 @@ async def handle_audio(websocket, path):
 
 
 async def main():
-    async with websockets.serve(handle_audio, "0.0.0.0", 8765):
-        print("🚀 Callbot is running at ws://0.0.0.0:8765")
-        await asyncio.Future()  # Run forever
+    async with websockets.serve(handle_audio, "0.0.0.0", 8765, path="/ws"):
+        print("🚀 Callbot is running at wss://0.0.0.0:8765/ws")
+        await asyncio.Future()  # Keep running
 
 
 if __name__ == "__main__":
