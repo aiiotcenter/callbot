@@ -1,16 +1,16 @@
-name: Build & Push to GHCR
+name: Build, Push & Deploy Callbot
 
 on:
   push:
     branches: [main]
 
 jobs:
-  build-and-push:
+  build-push-deploy:
     runs-on: ubuntu-latest
 
     permissions:
-      packages: write
       contents: read
+      packages: write
 
     steps:
       - name: Checkout code
@@ -27,6 +27,18 @@ jobs:
         run: |
           docker build -t ghcr.io/${{ github.repository_owner }}/callbot:latest .
 
-      - name: Push image to GHCR
+      - name: Push Docker image to GHCR
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/callbot:latest
+
+      - name: Deploy on remote server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /home/test.aiiot.center
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
