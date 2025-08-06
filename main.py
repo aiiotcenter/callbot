@@ -1,8 +1,9 @@
 # test_ws.py
 import asyncio
 import websockets
+import traceback
 
-async def echo(websocket, path):
+async def echo(websocket):
     print("📞 Client connected")
     try:
         async for message in websocket:
@@ -10,6 +11,7 @@ async def echo(websocket, path):
             await websocket.send(f"Echo: {message}")
     except Exception as e:
         print("🔴 Error:", e)
+        traceback.print_exc()
 
 async def main():
     async with websockets.serve(echo, "0.0.0.0", 8765):
