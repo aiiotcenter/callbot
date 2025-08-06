@@ -45,10 +45,8 @@ async def handle_audio(websocket, path):
                     asyncio.create_task(respond_to(transcript, websocket))
 
     async def respond_to(text, twilio_ws):
-        # Add user message to conversation history
         conversation_history.append({"role": "user", "content": text})
 
-        # Stream GPT reply
         print("🤖 GPT is thinking...")
         reply = ""
         response = await openai.ChatCompletion.acreate(
@@ -66,7 +64,6 @@ async def handle_audio(websocket, path):
         print(f"🧠 GPT: {reply}")
         conversation_history.append({"role": "assistant", "content": reply})
 
-        # Convert to speech using OpenAI’s TTS API
         speech_response = openai.audio.speech.create(
             model="tts-1",
             voice="nova",
@@ -77,16 +74,16 @@ async def handle_audio(websocket, path):
         with open(filename, "wb") as f:
             f.write(speech_response.content)
         print(f"🔊 Saved: {filename}")
-
-        # You must serve this file over a public HTTPS server for Twilio to play it
-        # e.g., using Flask or static hosting
         print("⚠️ Please upload this MP3 and send Twilio a `<Play>` URL")
 
     await asyncio.gather(receive_from_twilio(), handle_transcription())
 
 
-# Start WebSocket server
-start_server = websockets.serve(handle_audio, "0.0.0.0", 8765)
-print("🚀 Callbot is running at ws://localhost:8765")
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+async def main():
+    async with websockets.serve(handle_audio, "0.0.0.0", 8765):
+        print("🚀 Callbot is running at ws://0.0.0.0:8765")
+        await asyncio.Future()  # Run forever
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
