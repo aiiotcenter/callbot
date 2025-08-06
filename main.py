@@ -17,9 +17,15 @@ openai.api_key = OPENAI_API_KEY
 conversation_history = []
 
 async def handle_audio(websocket, path):
+    # Only accept connections on the right path
+    if path != "/ws":
+        print(f"❌ Rejected connection on invalid path: {path}")
+        await websocket.close()
+        return
+
     print("📞 Call connected.")
 
-    # Connect to Deepgram’s real-time transcription API
+    # Connect to Deepgram
     dg_ws = await websockets.connect(
         "wss://api.deepgram.com/v1/listen?punctuate=true&interim_results=false",
         extra_headers={"Authorization": f"Token {DEEPGRAM_API_KEY}"}
@@ -80,9 +86,9 @@ async def handle_audio(websocket, path):
 
 
 async def main():
-    async with websockets.serve(handle_audio, "0.0.0.0", 8765, path="/ws"):
+    async with websockets.serve(handle_audio, "0.0.0.0", 8765):
         print("🚀 Callbot is running at wss://0.0.0.0:8765/ws")
-        await asyncio.Future()  # Keep running
+        await asyncio.Future()  # Keeps the server running
 
 
 if __name__ == "__main__":
