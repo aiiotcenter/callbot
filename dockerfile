@@ -10,6 +10,7 @@ COPY . .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir websockets>=10.0
 
 # Expose the WebSocket port
 EXPOSE 8765
