@@ -16,7 +16,6 @@ openai.api_key = OPENAI_API_KEY
 
 conversation_history = []
 
-
 async def respond_to(text, twilio_ws):
     conversation_history.append({"role": "user", "content": text})
     print("🤖 GPT is thinking...")
@@ -38,7 +37,6 @@ async def respond_to(text, twilio_ws):
         print(f"🧠 GPT: {reply}")
         conversation_history.append({"role": "assistant", "content": reply})
 
-        # Convert to speech
         speech_response = openai.audio.speech.create(
             model="tts-1",
             voice="nova",
@@ -49,14 +47,15 @@ async def respond_to(text, twilio_ws):
         with open(filename, "wb") as f:
             f.write(speech_response.content)
         print(f"🔊 MP3 saved as: {filename}")
-        print("⚠️ You need to send this MP3 to Twilio with a <Play> tag manually")
+        print("⚠️ Send this MP3 back to the caller using <Play> TwiML.")
 
     except Exception as e:
         print("🔴 Error in GPT response:", str(e))
 
-
 async def handle_audio(websocket):
     print("📞 New WebSocket connection established")
+
+    await websocket.send("✅ Connected to Callbot WebSocket server")
 
     try:
         # Connect to Deepgram
@@ -69,21 +68,28 @@ async def handle_audio(websocket):
         async def receive_from_twilio():
             try:
                 async for message in websocket:
-                    print("📥 Message from client:", message[:60])
-                    msg = json.loads(message)
-                    if msg.get("event") == "media":
-                        audio = base64.b64decode(msg["media"]["payload"])
-                        await dg_ws.send(audio)
-                        print("🔁 Audio sent to Deepgram")
+                    print("📥 Raw message:", message[:100])
+                    try:
+                        msg = json.loads(message)
+                        if msg.get("event") == "media":
+                            audio = base64.b64decode(msg["media"]["payload"])
+                            await dg_ws.send(audio)
+                            print("🔁 Audio forwarded to Deepgram")
+                        elif msg.get("event") == "start":
+                            print("▶️ Start event received")
+                        else:
+                            print(f"ℹ️ Unknown event type: {msg.get('event')}")
+                    except json.JSONDecodeError:
+                        print("❌ Invalid JSON from client:", message)
             except websockets.exceptions.ConnectionClosed as e:
-                print("🔌 Twilio websocket closed:", e.code, e.reason)
+                print("🔌 WebSocket closed:", e.code, e.reason)
             except Exception as e:
                 print("🔴 Error in receive_from_twilio:", str(e))
 
         async def handle_transcription():
             try:
                 async for message in dg_ws:
-                    print("📝 Transcription message:", message[:60])
+                    print("📝 From Deepgram:", message[:100])
                     data = json.loads(message)
                     if "channel" in data and data["channel"]["alternatives"]:
                         transcript = data["channel"]["alternatives"][0]["transcript"]
@@ -98,14 +104,12 @@ async def handle_audio(websocket):
     except Exception as e:
         print("🔥 Fatal error in handle_audio:", str(e))
 
-    print("❌ Connection closed.")
-
+    print("❌ WebSocket handler closed.")
 
 async def main():
-    print("🚀 Starting WebSocket server at ws://0.0.0.0:8765")
+    print("🚀 Starting Callbot server on ws://0.0.0.0:8765")
     async with websockets.serve(handle_audio, "0.0.0.0", 8765):
-        await asyncio.Future()  # run forever
-
+        await asyncio.Future()
 
 if __name__ == "__main__":
     try:
