@@ -1,1 +1,7 @@
 .env
+node_modules/
+npm-debug.log*
+.DS_Store
+coverage/
+admin-dashboard/.next/
+admin-dashboard/data/agents.json

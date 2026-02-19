@@ -1,19 +1,22 @@
-# Use official Python image
-FROM python:3.11-slim
+FROM node:20-bookworm-slim AS deps
 
-# Set working directory
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+FROM node:20-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
 WORKDIR /app
 
-# Copy files
-COPY requirements.txt .
-COPY . .
+RUN groupadd --system app && useradd --system --gid app --uid 10001 app
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir websockets>=10.0
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+COPY src ./src
 
-# Expose the WebSocket port
+RUN chown -R app:app /app
+USER app
+
 EXPOSE 8765
-
-# Run the application
-CMD ["python", "main.py"]
+CMD ["node", "src/index.js"]
